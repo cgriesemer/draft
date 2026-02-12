@@ -523,7 +523,7 @@
 
 <header>
   <div class="header-left">
-    <h1>⚾ Draft Board</h1>
+    <h1>🥎 Draft Board</h1>
     <span class="subtitle">Spring '26 Minors — 10U</span>
   </div>
   <div class="header-stats">
@@ -558,6 +558,11 @@
 <div class="grid" id="grid"></div>
 
 <script>
+// ─── YOUR KEYS ───
+const BIN_ID = "698de81dd0ea881f40b5246e";
+const API_KEY = "$2a$10$gULtAyzsdoYh/ZoBtguClujgTaDflTSk6LK1jebgYRqDTg22Bc8be";
+
+// ─── PLAYER DATA ───
 const RAW = [
   {num:"2",  first:"Isabel",   last:"Agado",        bat:7.25, fld:3.0,  total:5.13, notes:"Pretty decent batting; Has good power; Swings hard; Very rough defensive; Very weak throwing arm; Cannot catch; Huge difference between bat and fielding"},
   {num:"4",  first:"Marleigh", last:"Amos",          bat:3.0,  fld:3.0,  total:3.0,  notes:"Very small; Very low bat speed; Very rough defensively; Incredibly young and raw; Would avoid"},
@@ -613,24 +618,74 @@ const RAW = [
   {num:"—",  first:"Ireland",  last:"Turner",        bat:3.0,  fld:2.0,  total:2.5,  notes:"Decent swing but very late and lacks pop; Speed 2/10; Scared of ball in outfield; Rough infield work"},
 ];
 
-// Initialize taken state
-const taken = new Set(JSON.parse(localStorage.getItem('taken') || '[]'));
+// ─── APP LOGIC ───
+const BASE_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+let taken = new Set();
 let currentSort = 'score-desc';
 
-function saveTaken() {
-  localStorage.setItem('taken', JSON.stringify([...taken]));
+// 1. SYNC
+async function sync() {
+  try {
+    const res = await fetch(BASE_URL, {
+      headers: { 'X-Master-Key': API_KEY }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const remoteTaken = data.record.taken || [];
+      if (remoteTaken.length !== taken.size || !remoteTaken.every(id => taken.has(id))) {
+        taken = new Set(remoteTaken);
+        render();
+        console.log("Updated from cloud.");
+      }
+    }
+  } catch (err) { console.error("Sync failed:", err); }
 }
 
-function playerKey(p) {
-  return `${p.num}-${p.last}-${p.first}`;
+// 2. UPDATE
+async function pushUpdate() {
+  const takenArray = Array.from(taken);
+  try {
+    await fetch(BASE_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': API_KEY
+      },
+      body: JSON.stringify({ taken: takenArray })
+    });
+  } catch (err) { alert("Could not save pick to cloud!"); }
 }
 
-function setSort(s) {
+// 3. ACTIONS
+window.draftPlayer = (key) => {
+  taken.add(key);
+  render();
+  pushUpdate();
+};
+
+window.undraftPlayer = (key) => {
+  taken.delete(key);
+  render();
+  pushUpdate();
+};
+
+// 4. HELPERS
+window.setSort = (s) => {
   currentSort = s;
   document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
   render();
 }
+
+window.toggleNotes = (safeKey) => {
+  const el = document.getElementById(`notes-${safeKey}`);
+  const btn = document.getElementById(`toggle-${safeKey}`);
+  if (!el || !btn) return;
+  const expanded = el.classList.toggle('expanded');
+  btn.textContent = expanded ? 'Show less' : 'Show more';
+}
+
+function playerKey(p) { return `${p.num}-${p.last}-${p.first}`; }
 
 function scoreColor(val) {
   if (val === null) return '';
@@ -656,17 +711,18 @@ function barWidth(val) {
   return Math.min(100, (val / 10) * 100);
 }
 
+// 5. RENDER
 function render() {
   const q = document.getElementById('search').value.toLowerCase().trim();
+  
   let players = RAW.filter(p => {
     if (!q) return true;
     return `${p.first} ${p.last} ${p.num}`.toLowerCase().includes(q);
   });
 
   const available = players.filter(p => !taken.has(playerKey(p)));
-  const takenList  = players.filter(p =>  taken.has(playerKey(p)));
+  const takenList = players.filter(p => taken.has(playerKey(p)));
 
-  // Sort available
   available.sort((a, b) => {
     if (currentSort === 'score-desc') {
       const sa = a.total ?? -1, sb = b.total ?? -1;
@@ -697,10 +753,11 @@ function render() {
   let html = '';
   let showedDivider = false;
 
-  allSorted.forEach((p, i) => {
+  allSorted.forEach((p) => {
     const key = playerKey(p);
     const isTaken = taken.has(key);
     const displayName = p.first ? `${p.first} ${p.last}` : p.last;
+    const safeKey = key.replace(/[^a-z0-9]/gi,'_');
 
     if (isTaken && !showedDivider) {
       showedDivider = true;
@@ -711,7 +768,7 @@ function render() {
     const fldBar = barWidth(p.fld);
 
     html += `
-    <div class="card ${isTaken ? 'taken' : ''}" id="card-${key.replace(/[^a-z0-9]/gi,'_')}">
+    <div class="card ${isTaken ? 'taken' : ''}" id="card-${safeKey}">
       <div class="card-header">
         <div class="jersey">#${p.num}</div>
         <div class="name-area">
@@ -736,8 +793,8 @@ function render() {
         </div>
       </div>
       <div class="notes-area">
-        <div class="notes-text" id="notes-${key.replace(/[^a-z0-9]/gi,'_')}">${p.notes}</div>
-        <button class="notes-toggle" id="toggle-${key.replace(/[^a-z0-9]/gi,'_')}" onclick="toggleNotes('${key.replace(/[^a-z0-9]/gi,'_')}')">Show more</button>
+        <div class="notes-text" id="notes-${safeKey}">${p.notes}</div>
+        <button class="notes-toggle" id="toggle-${safeKey}" onclick="toggleNotes('${safeKey}')">Show more</button>
       </div>
       <div class="card-footer">
         ${isTaken
@@ -750,41 +807,21 @@ function render() {
 
   grid.innerHTML = html;
 
-  // Show "show more" toggle only if text is clamped
   allSorted.forEach(p => {
-    const key = playerKey(p);
-    const safeKey = key.replace(/[^a-z0-9]/gi,'_');
-    const el = document.getElementById(`notes-${safeKey}`);
-    const btn = document.getElementById(`toggle-${safeKey}`);
-    if (el && btn) {
-      if (el.scrollHeight > el.clientHeight + 2) {
-        btn.style.display = 'block';
-      }
-    }
+     const key = playerKey(p);
+     const safeKey = key.replace(/[^a-z0-9]/gi,'_');
+     const el = document.getElementById(`notes-${safeKey}`);
+     const btn = document.getElementById(`toggle-${safeKey}`);
+     if (el && btn && el.scrollHeight > el.clientHeight + 2) {
+       btn.style.display = 'block';
+     }
   });
 }
 
-function toggleNotes(safeKey) {
-  const el  = document.getElementById(`notes-${safeKey}`);
-  const btn = document.getElementById(`toggle-${safeKey}`);
-  if (!el || !btn) return;
-  const expanded = el.classList.toggle('expanded');
-  btn.textContent = expanded ? 'Show less' : 'Show more';
-}
-
-function draftPlayer(key) {
-  taken.add(key);
-  saveTaken();
-  render();
-}
-
-function undraftPlayer(key) {
-  taken.delete(key);
-  saveTaken();
-  render();
-}
-
+// ─── STARTUP ───
 render();
+sync();
+setInterval(sync, 5000); // Poll every 5 seconds
 </script>
 </body>
 </html>
