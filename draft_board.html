@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10U Softball Draft Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2333;
+    --border: #30363d;
+    --gold: #f0a500;
+    --gold-dim: #a87300;
+    --green: #3fb950;
+    --red: #f85149;
+    --red-bg: #1a0a0a;
+    --red-border: #5a1a1a;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --text-dim: #484f58;
+    --mono: 'Share Tech Mono', monospace;
+    --head: 'Barlow Condensed', sans-serif;
+    --body: 'Barlow', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--gold);
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  h1 {
+    font-family: var(--head);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .subtitle {
+    font-family: var(--head);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .stat-chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .stat-chip span {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: var(--head);
+    color: var(--text);
+  }
+
+  .stat-chip.taken span { color: var(--red); }
+
+  /* ── CONTROLS ── */
+  .controls {
+    padding: 14px 28px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .controls-label {
+    font-family: var(--head);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-right: 4px;
+  }
+
+  .sort-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--head);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .sort-btn:hover {
+    border-color: var(--gold-dim);
+    color: var(--text);
+  }
+
+  .sort-btn.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #000;
+  }
+
+  .divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+
+  .search-wrap {
+    margin-left: auto;
+    position: relative;
+  }
+
+  .search-wrap input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 13px;
+    padding: 7px 12px 7px 32px;
+    border-radius: 4px;
+    width: 200px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-wrap input:focus {
+    border-color: var(--gold-dim);
+  }
+
+  .search-wrap input::placeholder { color: var(--text-dim); }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+    padding: 20px 28px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    animation: fadeIn 0.25s ease both;
+    position: relative;
+  }
+
+  .card:hover {
+    border-color: var(--gold-dim);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  .card.taken {
+    background: var(--red-bg);
+    border-color: var(--red-border);
+    opacity: 0.75;
+  }
+
+  .card.taken:hover {
+    border-color: var(--red);
+    transform: none;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card.taken .card-header {
+    border-bottom-color: var(--red-border);
+  }
+
+  .jersey {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--bg);
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    letter-spacing: 0.05em;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .card.taken .jersey {
+    background: #0d0000;
+    border-right-color: var(--red-border);
+  }
+
+  .name-area {
+    flex: 1;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .player-name {
+    font-family: var(--head);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card.taken .player-name {
+    color: var(--red);
+    text-decoration: line-through;
+    text-decoration-color: rgba(248,81,73,0.5);
+  }
+
+  .player-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .taken-badge {
+    display: none;
+    font-family: var(--head);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--red);
+    background: rgba(248,81,73,0.15);
+    border: 1px solid rgba(248,81,73,0.3);
+    padding: 2px 6px;
+    border-radius: 3px;
+    width: fit-content;
+  }
+
+  .card.taken .taken-badge { display: block; }
+
+  .scores-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card.taken .scores-area {
+    border-bottom-color: var(--red-border);
+  }
+
+  .score-cell {
+    padding: 10px 8px;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+
+  .card.taken .score-cell {
+    border-right-color: var(--red-border);
+  }
+
+  .score-cell:last-child { border-right: none; }
+
+  .score-label {
+    font-family: var(--head);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .score-val {
+    font-family: var(--mono);
+    font-size: 22px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .score-val.na {
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+
+  .score-val.total {
+    color: var(--gold);
+    font-size: 24px;
+  }
+
+  .card.taken .score-val.total {
+    color: var(--red);
+  }
+
+  .score-bar {
+    height: 3px;
+    background: var(--bg);
+    border-radius: 2px;
+    margin-top: 5px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--gold);
+    transition: width 0.4s ease;
+  }
+
+  .card.taken .score-bar-fill {
+    background: var(--red);
+  }
+
+  /* tier coloring for total score */
+  .score-val.tier-s { color: #58d68d; }
+  .score-val.tier-a { color: #f0a500; }
+  .score-val.tier-b { color: #85c1e9; }
+  .score-val.tier-c { color: var(--text-muted); }
+  .card.taken .score-val.tier-s,
+  .card.taken .score-val.tier-a,
+  .card.taken .score-val.tier-b,
+  .card.taken .score-val.tier-c { color: var(--red); }
+
+  .notes-area {
+    padding: 10px 12px;
+  }
+
+  .notes-text {
+    font-family: var(--body);
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+
+  .notes-text.expanded {
+    -webkit-line-clamp: unset;
+    display: block;
+  }
+
+  .notes-toggle {
+    background: none;
+    border: none;
+    color: var(--gold-dim);
+    font-family: var(--head);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 5px;
+    padding: 0;
+    display: none;
+  }
+
+  .notes-toggle:hover { color: var(--gold); }
+  .card.taken .notes-toggle { color: var(--red-border); }
+  .card.taken .notes-toggle:hover { color: var(--red); }
+
+  .card-footer {
+    border-top: 1px solid var(--border);
+    padding: 8px 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .card.taken .card-footer {
+    border-top-color: var(--red-border);
+  }
+
+  .draft-btn {
+    font-family: var(--head);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid var(--green);
+    background: rgba(63,185,80,0.1);
+    color: var(--green);
+  }
+
+  .draft-btn:hover {
+    background: var(--green);
+    color: #000;
+  }
+
+  .draft-btn.undo {
+    border-color: var(--red-border);
+    background: rgba(248,81,73,0.1);
+    color: var(--red);
+  }
+
+  .draft-btn.undo:hover {
+    background: var(--red);
+    color: #fff;
+  }
+
+  /* ── SECTION DIVIDER ── */
+  .taken-section-label {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0 4px;
+    font-family: var(--head);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--red);
+    opacity: 0.6;
+  }
+
+  .taken-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--red-border);
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px;
+    color: var(--text-dim);
+    font-family: var(--head);
+    font-size: 18px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header { padding: 14px 16px; }
+    .grid  { padding: 12px 16px; gap: 10px; }
+    .controls { padding: 10px 16px; }
+    h1 { font-size: 22px; }
+    .header-stats { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>⚾ Draft Board</h1>
+    <span class="subtitle">Spring '26 Minors — 10U</span>
+  </div>
+  <div class="header-stats">
+    <div class="stat-chip">
+      <span id="stat-total">0</span>
+      Total
+    </div>
+    <div class="stat-chip">
+      <span id="stat-available">0</span>
+      Available
+    </div>
+    <div class="stat-chip taken">
+      <span id="stat-taken">0</span>
+      Taken
+    </div>
+  </div>
+</header>
+
+<div class="controls">
+  <span class="controls-label">Sort</span>
+  <button class="sort-btn active" onclick="setSort('score-desc')">Score ↓</button>
+  <button class="sort-btn" onclick="setSort('score-asc')">Score ↑</button>
+  <div class="divider"></div>
+  <button class="sort-btn" onclick="setSort('alpha-asc')">A → Z</button>
+  <button class="sort-btn" onclick="setSort('alpha-desc')">Z → A</button>
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Search player..." oninput="render()">
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const RAW = [
+  {num:"2",  first:"Isabel",   last:"Agado",        bat:7.25, fld:3.0,  total:5.13, notes:"Pretty decent batting; Has good power; Swings hard; Very rough defensive; Very weak throwing arm; Cannot catch; Huge difference between bat and fielding"},
+  {num:"4",  first:"Marleigh", last:"Amos",          bat:3.0,  fld:3.0,  total:3.0,  notes:"Very small; Very low bat speed; Very rough defensively; Incredibly young and raw; Would avoid"},
+  {num:"5",  first:"Beckley",  last:"Anderson",      bat:2.0,  fld:5.75, total:3.88, notes:"Way ahead of all pitches; Hopefully just small sample size; Mid fielding; Decent arm strength"},
+  {num:"6",  first:"Emma",     last:"Arvizu",        bat:6.5,  fld:6.5,  total:6.5,  notes:"Very small; Decent form; Fairly decent defensively; Can catch; Arm decent but not great"},
+  {num:"7",  first:"Lexi",     last:"Baisa",         bat:6.0,  fld:6.0,  total:6.0,  notes:"Very large girl; Wide; Defensively just incredibly slow; Didn't shine in any particular way"},
+  {num:"10", first:"Jillian",  last:"Beavers",       bat:2.0,  fld:3.0,  total:2.5,  notes:"Extremely raw; Very rough defensively; Pretty good speed but otherwise very raw; Would not draft"},
+  {num:"11", first:"Aria",     last:"Beltran",       bat:null, fld:5.0,  total:null, notes:"Very small but good power; Could be serviceable batting wise; Rough defensively; Can't catch but has decent arm"},
+  {num:"12", first:"Audrey",   last:"Blake",         bat:7.25, fld:7.0,  total:7.13, notes:"Small but generated good amount of power; Could be high valued pick that flies under radar"},
+  {num:"13", first:"Madison",  last:"Bohne",         bat:8.0,  fld:7.0,  total:7.5,  notes:"Similar scores to Preslee; sisters"},
+  {num:"14", first:"Preslee",  last:"Bohne",         bat:8.0,  fld:7.0,  total:7.5,  notes:"Good overall player; sisters"},
+  {num:"15", first:"Brenlee",  last:"Brown",         bat:4.0,  fld:4.5,  total:4.25, notes:"Lefty; Very dicey as a hitter"},
+  {num:"16", first:"Savannah", last:"Bryant",        bat:4.0,  fld:5.0,  total:4.5,  notes:"Heavy on the backside and flies open on the front; Lacks hard contact; Plus speed; Decent arm but wild from the infield"},
+  {num:"17", first:"Avery",    last:"Bufton",        bat:9.5,  fld:6.0,  total:7.75, notes:"Very good batting; Much rougher defensively than hitting"},
+  {num:"20", first:"Michaela", last:"Crawford",      bat:7.25, fld:6.5,  total:6.88, notes:"Pretty aggressive stance; All good hits; Fielding pretty rough but really good arm; Catching is suspect; Only helped by arm strength; Might fly under the radar"},
+  {num:"21", first:"Ivyana",   last:"Daniel",        bat:4.0,  fld:null, total:null, notes:"Extremely small; Made contact; Swing will get eaten up by actual pitching; Very rough defensively"},
+  {num:"23", first:"Emma",     last:"Davis",         bat:6.5,  fld:5.0,  total:5.75, notes:"Decent power; Would imagine would struggle with speed; Pretty slow bat swing; Defensive liability; Arm strength pretty decent"},
+  {num:"24", first:"Ava",      last:"Davis",         bat:5.5,  fld:5.5,  total:5.5,  notes:"Small but swings with power; Pretty raw but doing best; Available in very late rounds; Wouldn't be worst option"},
+  {num:"26", first:"Alison",   last:"Dreyer",        bat:0.0,  fld:0.0,  total:0.0,  notes:"No speed; No accuracy; Avoid"},
+  {num:"29", first:"Kelly",    last:"Ezell",         bat:4.0,  fld:5.75, total:4.88, notes:"Goes by Hazel; Pretty raw; Swing isn't terrible but never made contact; All swing and miss; Pretty decent speed; Did catch pop flies; Arm pretty weak"},
+  {num:"30", first:"Michaela", last:"Feliciano",     bat:4.5,  fld:2.0,  total:3.25, notes:"Extremely rough batting; No form; Not very fast; Extremely rough defensively; Recommend avoiding"},
+  {num:"32", first:"Caroline", last:"Fortenberry",   bat:9.0,  fld:7.0,  total:8.0,  notes:"Excellent batting"},
+  {num:"34", first:"Mila",     last:"Garcia",        bat:5.0,  fld:4.5,  total:4.75, notes:"Big tall girl; Very slow swing; Didn't generate much power; Low batting order; Would struggle against live pitching; Extremely raw defensively"},
+  {num:"35", first:"Virginia", last:"Genest",        bat:4.0,  fld:null, total:null, notes:"Very rough batting; Terrible form; Looks very raw"},
+  {num:"39", first:"Kree",     last:"Griggs",        bat:8.25, fld:7.0,  total:7.63, notes:"Very good power; Solid but not a ton of arm strength; Not a liability; Pretty impressive"},
+  {num:"40", first:"Bailey",   last:"Hart",          bat:9.0,  fld:9.0,  total:9.0,  notes:"Batting 9/10; Fielding 9/10"},
+  {num:"41", first:"Berkley",  last:"Havard",        bat:7.0,  fld:7.0,  total:7.0,  notes:"Decent speed; Good size; Looks athletic; Not great defensively but athleticism covers a lot up; Good value pick in mid rounds"},
+  {num:"42", first:"Ava",      last:"Headrick",      bat:null, fld:null, total:null, notes:"Modified through and through; Whiffed all 5 at the plate; Lacks arm talent"},
+  {num:"43", first:"Brooklyn", last:"Heller",        bat:3.0,  fld:1.0,  total:2.0,  notes:"Very raw; Never made contact; Extremely rough defensively; Absolutely zero arm"},
+  {num:"44", first:"Heidi",    last:"Henson",        bat:9.5,  fld:7.5,  total:8.5,  notes:"Lots of power; Not as great defensively"},
+  {num:"46", first:"Chase",    last:"Hollowell",     bat:6.5,  fld:5.5,  total:6.0,  notes:"Pretty raw; Has possible power; Pretty terrible arm but not the worst"},
+  {num:"47", first:"Kylie",    last:"Hummer",        bat:5.0,  fld:5.0,  total:5.0,  notes:"Playing in elastic waistband jeans; Very little power; Did make contact; Very raw defensively but not the worst seen"},
+  {num:"48", first:"Addison",  last:"Hunt",          bat:9.5,  fld:8.0,  total:8.75, notes:"Extremely tall; Lots of power; Swings very hard; Probably tallest in draft; Caught everything; Throws hard despite questionable mechanics; HIGH DRAFT PICK"},
+  {num:"49", first:"Evelyn",   last:"Ingham",        bat:4.5,  fld:6.0,  total:5.25, notes:"Hard swing but raw; Lots of swing and misses; Difficulty with pop flies; Arm halfway decent but nothing special"},
+  {num:"50", first:"Collins",  last:"Istre",         bat:6.5,  fld:6.0,  total:6.25, notes:"Some bat speed; Small but hits hard; Could do well against pitching; Not atrocious; Asset in late rounds"},
+  {num:"51", first:"Lucy",     last:"Kelly",         bat:6.25, fld:5.0,  total:5.63, notes:"Good hard swing; Not making great contact but putting speed on it; Pretty rough defensively; Not the worst arm but not great; Being generous"},
+  {num:"61", first:"Harleigh", last:"McAdams",       bat:8.0,  fld:8.0,  total:8.0,  notes:"Plays for Hooks select; Very hard swing; All good hits; Junior; Good value pick even in early rounds"},
+  {num:"65", first:"Madelyn",  last:"Muhl",          bat:7.0,  fld:7.0,  total:7.0,  notes:"Good bat speed; Pretty decent defensively; Good arm; Draftable"},
+  {num:"70", first:"McKinley", last:"Phillips",      bat:6.75, fld:null, total:null, notes:"Hit surprisingly well"},
+  {num:"72", first:"Harper",   last:"Resendez",      bat:2.0,  fld:5.0,  total:3.5,  notes:"Workable swing but handsy; Speed 5/10; Work to do on ground ball technique but decent arm; Raw but late round talent"},
+  {num:"76", first:"Solimar",  last:"Rodriguez",     bat:9.0,  fld:null, total:null, notes:"Excellent batting"},
+  {num:"80", first:"Elise",    last:"Shaw",          bat:5.5,  fld:5.5,  total:5.5,  notes:"Swings hard but pretty wild; Rough defensively; Can't catch with gloves; Arm decent"},
+  {num:"86", first:"JerRora",  last:"Smith",         bat:3.5,  fld:3.0,  total:3.25, notes:"Very rough batting; Very rough defensively"},
+  {num:"87", first:"JerRaea",  last:"Smith",         bat:4.0,  fld:4.0,  total:4.0,  notes:"Crazy wild; Good speed if makes contact; Otherwise very rough; Arm good but everything else terrible; Would avoid both Smiths"},
+  {num:"88", first:"Sydney",   last:"Solis",         bat:7.0,  fld:5.0,  total:6.0,  notes:"Pretty decent; Good power; Rough defensively; Not great arm; Revised down to 5.0 defensively"},
+  {num:"90", first:"Karsyn",   last:"Stanley",       bat:6.0,  fld:7.0,  total:6.5,  notes:"Good contact with decent pop; Tendency to get out on front side; Big arm in infield; Only one to catch a pop fly; Workable"},
+  {num:"93", first:"Leighton", last:"Thompson",      bat:5.5,  fld:null, total:null, notes:"Very small lefty; Made contact no problem; Would struggle with actual pitching speed; Absolutely no arm to speak of; Rough in field"},
+  {num:"96", first:"Crosby",   last:"Wakefield",     bat:2.0,  fld:2.0,  total:2.0,  notes:"Doesn't appear to want to swing; Lacks arm talent; Throws off wrong foot; Scared to death of ball; However plus speed"},
+  {num:"97", first:"TaKiyah",  last:"Walker-Smith",  bat:5.25, fld:5.25, total:5.25, notes:"Zero bat speed; Did make contact; Never missed ball defensively; Rough; Can get ball in"},
+  {num:"101",first:"",         last:"White",         bat:2.0,  fld:null, total:null, notes:"Screams modified; Bad swing and a week late; Took infield with helmet on but stopped the ball; Lacks arm talent"},
+  {num:"105",first:"",         last:"Wilson",        bat:7.5,  fld:8.0,  total:7.75, notes:"Good power; Not quite as athletic as McAdams; Good value pick"},
+  {num:"107",first:"",         last:"De Leon",       bat:7.25, fld:5.0,  total:6.13, notes:"2005 birthday; Poor form; Has heart; Size and athleticism present; Not great shoulder"},
+  {num:"—",  first:"Ireland",  last:"Turner",        bat:3.0,  fld:2.0,  total:2.5,  notes:"Decent swing but very late and lacks pop; Speed 2/10; Scared of ball in outfield; Rough infield work"},
+];
+
+// Initialize taken state
+const taken = new Set(JSON.parse(localStorage.getItem('taken') || '[]'));
+let currentSort = 'score-desc';
+
+function saveTaken() {
+  localStorage.setItem('taken', JSON.stringify([...taken]));
+}
+
+function playerKey(p) {
+  return `${p.num}-${p.last}-${p.first}`;
+}
+
+function setSort(s) {
+  currentSort = s;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  render();
+}
+
+function scoreColor(val) {
+  if (val === null) return '';
+  if (val >= 8.0) return 'tier-s';
+  if (val >= 7.0) return 'tier-a';
+  if (val >= 5.5) return 'tier-b';
+  return 'tier-c';
+}
+
+function formatScore(val) {
+  if (val === null) return '<span class="score-val na">—</span>';
+  return `<span class="score-val ${scoreColor(val)}">${val.toFixed(2)}</span>`;
+}
+
+function formatTotal(val, isTaken) {
+  if (val === null) return '<span class="score-val na total">—</span>';
+  const cls = isTaken ? 'total' : `total ${scoreColor(val)}`;
+  return `<span class="score-val ${cls}">${val.toFixed(2)}</span>`;
+}
+
+function barWidth(val) {
+  if (val === null) return 0;
+  return Math.min(100, (val / 10) * 100);
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  let players = RAW.filter(p => {
+    if (!q) return true;
+    return `${p.first} ${p.last} ${p.num}`.toLowerCase().includes(q);
+  });
+
+  const available = players.filter(p => !taken.has(playerKey(p)));
+  const takenList  = players.filter(p =>  taken.has(playerKey(p)));
+
+  // Sort available
+  available.sort((a, b) => {
+    if (currentSort === 'score-desc') {
+      const sa = a.total ?? -1, sb = b.total ?? -1;
+      return sb - sa || a.last.localeCompare(b.last);
+    }
+    if (currentSort === 'score-asc') {
+      const sa = a.total ?? 11, sb = b.total ?? 11;
+      return sa - sb || a.last.localeCompare(b.last);
+    }
+    if (currentSort === 'alpha-asc') return a.last.localeCompare(b.last) || a.first.localeCompare(b.first);
+    if (currentSort === 'alpha-desc') return b.last.localeCompare(a.last) || b.first.localeCompare(a.first);
+    return 0;
+  });
+
+  const allSorted = [...available, ...takenList];
+
+  document.getElementById('stat-total').textContent = RAW.length;
+  document.getElementById('stat-available').textContent = RAW.length - taken.size;
+  document.getElementById('stat-taken').textContent = taken.size;
+
+  const grid = document.getElementById('grid');
+
+  if (allSorted.length === 0) {
+    grid.innerHTML = '<div class="empty-state">No players match your search</div>';
+    return;
+  }
+
+  let html = '';
+  let showedDivider = false;
+
+  allSorted.forEach((p, i) => {
+    const key = playerKey(p);
+    const isTaken = taken.has(key);
+    const displayName = p.first ? `${p.first} ${p.last}` : p.last;
+
+    if (isTaken && !showedDivider) {
+      showedDivider = true;
+      html += `<div class="taken-section-label">✕ Taken / Off Board</div>`;
+    }
+
+    const batBar = barWidth(p.bat);
+    const fldBar = barWidth(p.fld);
+
+    html += `
+    <div class="card ${isTaken ? 'taken' : ''}" id="card-${key.replace(/[^a-z0-9]/gi,'_')}">
+      <div class="card-header">
+        <div class="jersey">#${p.num}</div>
+        <div class="name-area">
+          <div class="player-name">${displayName}</div>
+          <div class="taken-badge">DRAFTED</div>
+        </div>
+      </div>
+      <div class="scores-area">
+        <div class="score-cell">
+          <div class="score-label">Batting</div>
+          ${formatScore(p.bat)}
+          <div class="score-bar"><div class="score-bar-fill" style="width:${batBar}%"></div></div>
+        </div>
+        <div class="score-cell">
+          <div class="score-label">Fielding</div>
+          ${formatScore(p.fld)}
+          <div class="score-bar"><div class="score-bar-fill" style="width:${fldBar}%"></div></div>
+        </div>
+        <div class="score-cell">
+          <div class="score-label">Total</div>
+          ${formatTotal(p.total, isTaken)}
+        </div>
+      </div>
+      <div class="notes-area">
+        <div class="notes-text" id="notes-${key.replace(/[^a-z0-9]/gi,'_')}">${p.notes}</div>
+        <button class="notes-toggle" id="toggle-${key.replace(/[^a-z0-9]/gi,'_')}" onclick="toggleNotes('${key.replace(/[^a-z0-9]/gi,'_')}')">Show more</button>
+      </div>
+      <div class="card-footer">
+        ${isTaken
+          ? `<button class="draft-btn undo" onclick="undraftPlayer('${key}')">↩ Restore</button>`
+          : `<button class="draft-btn" onclick="draftPlayer('${key}')">✕ Mark Taken</button>`
+        }
+      </div>
+    </div>`;
+  });
+
+  grid.innerHTML = html;
+
+  // Show "show more" toggle only if text is clamped
+  allSorted.forEach(p => {
+    const key = playerKey(p);
+    const safeKey = key.replace(/[^a-z0-9]/gi,'_');
+    const el = document.getElementById(`notes-${safeKey}`);
+    const btn = document.getElementById(`toggle-${safeKey}`);
+    if (el && btn) {
+      if (el.scrollHeight > el.clientHeight + 2) {
+        btn.style.display = 'block';
+      }
+    }
+  });
+}
+
+function toggleNotes(safeKey) {
+  const el  = document.getElementById(`notes-${safeKey}`);
+  const btn = document.getElementById(`toggle-${safeKey}`);
+  if (!el || !btn) return;
+  const expanded = el.classList.toggle('expanded');
+  btn.textContent = expanded ? 'Show less' : 'Show more';
+}
+
+function draftPlayer(key) {
+  taken.add(key);
+  saveTaken();
+  render();
+}
+
+function undraftPlayer(key) {
+  taken.delete(key);
+  saveTaken();
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
