@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10U Softball Draft Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@400;500&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d1117; --surface:#161b22; --surface2:#1c2333; --border:#30363d;
+    --gold:#f0a500; --gold-dim:#a87300; --green:#3fb950;
+    --red:#f85149; --red-bg:#1a0a0a; --red-border:#5a1a1a;
+    --text:#e6edf3; --text-muted:#7d8590; --text-dim:#484f58;
+    --mono:'Share Tech Mono',monospace; --head:'Barlow Condensed',sans-serif; --body:'Barlow',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;padding-bottom:60px;}
+
+  /* HEADER */
+  header{background:var(--surface);border-bottom:2px solid var(--gold);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px rgba(0,0,0,.6);}
+  .header-left{display:flex;align-items:baseline;gap:14px;}
+  h1{font-family:var(--head);font-size:28px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--gold);line-height:1;}
+  .subtitle{font-family:var(--head);font-size:14px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);}
+  .header-right{display:flex;align-items:center;gap:24px;}
+  .header-stats{display:flex;gap:24px;align-items:center;}
+  .stat-chip{font-family:var(--mono);font-size:12px;color:var(--text-muted);display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .stat-chip span{font-size:20px;font-weight:700;font-family:var(--head);color:var(--text);}
+  .stat-chip.taken span{color:var(--red);}
+
+  /* SYNC */
+  .sync-status{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.05em;}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0;transition:background .3s;}
+  .sync-dot.synced{background:var(--green);}
+  .sync-dot.syncing{background:var(--gold);animation:pulse .8s infinite;}
+  .sync-dot.error{background:var(--red);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+  /* RELOAD BTN */
+  .reload-btn{background:none;border:1px solid var(--border);color:var(--text-muted);font-family:var(--head);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:4px;cursor:pointer;transition:all .15s;}
+  .reload-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+
+  /* SETUP BANNER */
+  .setup-banner{background:#1a1200;border:1px solid var(--gold-dim);border-left:4px solid var(--gold);margin:16px 28px;padding:14px 18px;border-radius:4px;display:none;}
+  .setup-banner.visible{display:block;}
+  .setup-banner h3{font-family:var(--head);font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+  .setup-banner p{font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:6px;}
+  .setup-banner code{background:var(--bg);border:1px solid var(--border);padding:2px 6px;border-radius:3px;font-family:var(--mono);font-size:12px;color:var(--gold);}
+  .url-input-row{display:flex;gap:8px;margin-top:10px;}
+  .url-input-row input{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 12px;border-radius:4px;outline:none;}
+  .url-input-row input:focus{border-color:var(--gold-dim);}
+  .url-input-row input::placeholder{color:var(--text-dim);}
+  .url-save-btn{background:var(--gold);border:none;color:#000;font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 16px;border-radius:4px;cursor:pointer;white-space:nowrap;}
+  .url-save-btn:hover{background:#d49200;}
+
+  /* CONTROLS */
+  .controls{padding:14px 28px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .controls-label{font-family:var(--head);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-right:4px;}
+  .sort-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);font-family:var(--head);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:7px 16px;border-radius:4px;cursor:pointer;transition:all .15s;}
+  .sort-btn:hover{border-color:var(--gold-dim);color:var(--text);}
+  .sort-btn.active{background:var(--gold);border-color:var(--gold);color:#000;}
+  .divider{width:1px;height:24px;background:var(--border);margin:0 4px;}
+  .search-wrap{margin-left:auto;position:relative;}
+  .search-wrap input{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--body);font-size:13px;padding:7px 12px 7px 32px;border-radius:4px;width:200px;outline:none;transition:border-color .15s;}
+  .search-wrap input:focus{border-color:var(--gold-dim);}
+  .search-wrap input::placeholder{color:var(--text-dim);}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:13px;}
+
+  /* GRID */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;padding:20px 28px;}
+
+  /* CARD */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;transition:border-color .2s,transform .15s,box-shadow .2s;animation:fadeIn .25s ease both;}
+  .card:hover{border-color:var(--gold-dim);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .card.taken{background:var(--red-bg);border-color:var(--red-border);opacity:.75;}
+  .card.taken:hover{border-color:var(--red);transform:none;}
+  .card-header{display:flex;align-items:stretch;border-bottom:1px solid var(--border);}
+  .card.taken .card-header{border-bottom-color:var(--red-border);}
+  .jersey{font-family:var(--mono);font-size:11px;color:var(--text-dim);background:var(--bg);padding:8px 10px;display:flex;align-items:center;justify-content:center;min-width:44px;letter-spacing:.05em;border-right:1px solid var(--border);flex-shrink:0;}
+  .card.taken .jersey{background:#0d0000;border-right-color:var(--red-border);}
+  .name-area{flex:1;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;}
+  .player-name{font-family:var(--head);font-size:18px;font-weight:700;letter-spacing:.02em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .card.taken .player-name{color:var(--red);text-decoration:line-through;text-decoration-color:rgba(248,81,73,.5);}
+  .taken-badge{display:none;font-family:var(--head);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red);background:rgba(248,81,73,.15);border:1px solid rgba(248,81,73,.3);padding:2px 6px;border-radius:3px;width:fit-content;}
+  .card.taken .taken-badge{display:block;}
+  .scores-area{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid var(--border);}
+  .card.taken .scores-area{border-bottom-color:var(--red-border);}
+  .score-cell{padding:10px 8px;text-align:center;border-right:1px solid var(--border);}
+  .card.taken .score-cell{border-right-color:var(--red-border);}
+  .score-cell:last-child{border-right:none;}
+  .score-label{font-family:var(--head);font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
+  .score-val{font-family:var(--mono);font-size:22px;line-height:1;color:var(--text);}
+  .score-val.na{font-size:14px;color:var(--text-dim);}
+  .score-val.total{color:var(--gold);font-size:24px;}
+  .card.taken .score-val.total{color:var(--red);}
+  .score-bar{height:3px;background:var(--bg);border-radius:2px;margin-top:5px;overflow:hidden;}
+  .score-bar-fill{height:100%;border-radius:2px;background:var(--gold);transition:width .4s ease;}
+  .card.taken .score-bar-fill{background:var(--red);}
+  .score-val.tier-s{color:#58d68d;}
+  .score-val.tier-a{color:#f0a500;}
+  .score-val.tier-b{color:#85c1e9;}
+  .score-val.tier-c{color:var(--text-muted);}
+  .card.taken .score-val.tier-s,.card.taken .score-val.tier-a,.card.taken .score-val.tier-b,.card.taken .score-val.tier-c{color:var(--red);}
+  .notes-area{padding:10px 12px;}
+  .notes-text{font-family:var(--body);font-size:12px;color:var(--text-muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .notes-text.expanded{-webkit-line-clamp:unset;display:block;}
+  .notes-toggle{background:none;border:none;color:var(--gold-dim);font-family:var(--head);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;margin-top:5px;padding:0;display:none;}
+  .notes-toggle:hover{color:var(--gold);}
+  .card.taken .notes-toggle{color:var(--red-border);}
+  .card.taken .notes-toggle:hover{color:var(--red);}
+  .card-footer{border-top:1px solid var(--border);padding:8px 12px;display:flex;justify-content:flex-end;}
+  .card.taken .card-footer{border-top-color:var(--red-border);}
+  .draft-btn{font-family:var(--head);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .15s;border:1px solid var(--green);background:rgba(63,185,80,.1);color:var(--green);}
+  .draft-btn:hover{background:var(--green);color:#000;}
+  .draft-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .draft-btn.undo{border-color:var(--red-border);background:rgba(248,81,73,.1);color:var(--red);}
+  .draft-btn.undo:hover{background:var(--red);color:#fff;}
+
+  /* SECTION DIVIDER */
+  .taken-section-label{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:8px 0 4px;font-family:var(--head);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red);opacity:.6;}
+  .taken-section-label::after{content:'';flex:1;height:1px;background:var(--red-border);}
+
+  /* EMPTY / ERROR STATES */
+  .empty-state{grid-column:1/-1;text-align:center;padding:60px;color:var(--text-dim);font-family:var(--head);font-size:18px;letter-spacing:.1em;text-transform:uppercase;}
+  .error-state{grid-column:1/-1;text-align:center;padding:40px;color:var(--red);font-family:var(--head);font-size:15px;letter-spacing:.05em;}
+
+  /* LOADING OVERLAY */
+  .loading-overlay{position:fixed;inset:0;background:rgba(13,17,23,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;font-family:var(--head);font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);}
+  .loading-overlay.hidden{display:none;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  @media(max-width:600px){
+    header{padding:14px 16px;flex-wrap:wrap;gap:10px;}
+    .grid{padding:12px 16px;gap:10px;}
+    .controls{padding:10px 16px;}
+    h1{font-size:22px;}
+    .setup-banner{margin:12px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span id="loadingMsg">Loading from Google Sheets…</span>
+</div>
+
+<header>
+  <div class="header-left">
+    <h1>⚾ Draft Board</h1>
+    <span class="subtitle">Spring '26 Minors — 10U</span>
+  </div>
+  <div class="header-right">
+    <div class="sync-status">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncLabel">Connecting…</span>
+    </div>
+    <button class="reload-btn" onclick="reloadAll()" title="Refresh from sheet">↻ Refresh</button>
+    <div class="header-stats">
+      <div class="stat-chip"><span id="stat-total">—</span>Total</div>
+      <div class="stat-chip"><span id="stat-available">—</span>Available</div>
+      <div class="stat-chip taken"><span id="stat-taken">—</span>Taken</div>
+    </div>
+  </div>
+</header>
+
+<div class="setup-banner" id="setupBanner">
+  <h3>⚙ One-time Setup Required</h3>
+  <p>Paste your Google Apps Script Web App URL below. See <code>SETUP_INSTRUCTIONS.txt</code> for how to deploy it.</p>
+  <div class="url-input-row">
+    <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/YOUR_ID/exec" />
+    <button class="url-save-btn" onclick="saveScriptUrl()">Save &amp; Connect</button>
+  </div>
+</div>
+
+<div class="controls">
+  <span class="controls-label">Sort</span>
+  <button class="sort-btn active" onclick="setSort('score-desc',event)">Score ↓</button>
+  <button class="sort-btn" onclick="setSort('score-asc',event)">Score ↑</button>
+  <div class="divider"></div>
+  <button class="sort-btn" onclick="setSort('alpha-asc',event)">A → Z</button>
+  <button class="sort-btn" onclick="setSort('alpha-desc',event)">Z → A</button>
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Search player…" oninput="render()">
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const STORAGE_URL_KEY = 'draft_script_url';
+let players = [];
+let taken   = new Set();
+let currentSort = 'score-desc';
+
+// ── URL MANAGEMENT ────────────────────────────────────────
+function getScriptUrl(){ return localStorage.getItem(STORAGE_URL_KEY)||''; }
+
+function saveScriptUrl(){
+  const val = document.getElementById('scriptUrlInput').value.trim();
+  if(!val.startsWith('https://script.google.com')){
+    alert('Please paste a valid Apps Script URL starting with https://script.google.com');
+    return;
+  }
+  localStorage.setItem(STORAGE_URL_KEY, val);
+  document.getElementById('setupBanner').classList.remove('visible');
+  reloadAll();
+}
+
+// ── SYNC ──────────────────────────────────────────────────
+function setSyncStatus(state, label){
+  document.getElementById('syncDot').className = 'sync-dot '+state;
+  document.getElementById('syncLabel').textContent = label;
+}
+
+function showLoading(show, msg){
+  document.getElementById('loadingOverlay').classList.toggle('hidden',!show);
+  if(msg) document.getElementById('loadingMsg').textContent = msg;
+}
+
+async function reloadAll(){
+  const url = getScriptUrl();
+  if(!url){ document.getElementById('setupBanner').classList.add('visible'); setSyncStatus('error','Not connected'); render(); return; }
+  showLoading(true,'Loading from Google Sheets…');
+  setSyncStatus('syncing','Loading…');
+  try {
+    const res  = await fetch(url+'?t='+Date.now()); // cache-bust
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error||'Unknown error');
+    players = data.players || [];
+    taken   = new Set(data.taken || []);
+    setSyncStatus('synced','Synced');
+    localStorage.setItem('taken_fallback', JSON.stringify([...taken]));
+  } catch(e){
+    setSyncStatus('error','Load failed');
+    console.error(e);
+    // fallback to cached taken state if players already loaded
+    const fb = localStorage.getItem('taken_fallback');
+    if(fb) taken = new Set(JSON.parse(fb));
+    if(players.length === 0){
+      document.getElementById('grid').innerHTML = `<div class="error-state">⚠ Could not load player data from Google Sheets.<br>Check your script URL or try refreshing.</div>`;
+      showLoading(false);
+      return;
+    }
+  }
+  showLoading(false);
+  render();
+}
+
+async function saveToSheets(){
+  const url = getScriptUrl();
+  if(!url) return;
+  setSyncStatus('syncing','Saving…');
+  localStorage.setItem('taken_fallback', JSON.stringify([...taken]));
+  try {
+    const res  = await fetch(url, { method:'POST', body: JSON.stringify({ taken:[...taken] }) });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error);
+    setSyncStatus('synced','Synced');
+  } catch(e){
+    setSyncStatus('error','Save failed — cached locally');
+    console.error(e);
+  }
+}
+
+// ── HELPERS ───────────────────────────────────────────────
+function playerKey(p){ return `${p.num}-${p.last}-${p.first}`; }
+
+function setSort(s, e){
+  currentSort = s;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  render();
+}
+
+function scoreColor(v){
+  if(v===null) return '';
+  if(v>=8.0) return 'tier-s';
+  if(v>=7.0) return 'tier-a';
+  if(v>=5.5) return 'tier-b';
+  return 'tier-c';
+}
+
+function fmt(v){
+  if(v===null) return '<span class="score-val na">—</span>';
+  return `<span class="score-val ${scoreColor(v)}">${v.toFixed(2)}</span>`;
+}
+
+function fmtTotal(v, isTaken){
+  if(v===null) return '<span class="score-val na total">—</span>';
+  const cls = isTaken ? 'total' : `total ${scoreColor(v)}`;
+  return `<span class="score-val ${cls}">${v.toFixed(2)}</span>`;
+}
+
+function barW(v){ return v===null ? 0 : Math.min(100,(v/10)*100); }
+
+// ── RENDER ────────────────────────────────────────────────
+function render(){
+  if(players.length === 0 && getScriptUrl()){
+    document.getElementById('grid').innerHTML = '<div class="empty-state">No player data loaded</div>';
+    return;
+  }
+
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  let filtered = players.filter(p => !q || `${p.first} ${p.last} ${p.num}`.toLowerCase().includes(q));
+
+  const available = filtered.filter(p => !taken.has(playerKey(p)));
+  const takenList = filtered.filter(p =>  taken.has(playerKey(p)));
+
+  const sorts = {
+    'score-desc': (a,b)=>((b.total??-1)-(a.total??-1))||a.last.localeCompare(b.last),
+    'score-asc':  (a,b)=>((a.total??11)-(b.total??11))||a.last.localeCompare(b.last),
+    'alpha-asc':  (a,b)=>a.last.localeCompare(b.last)||a.first.localeCompare(b.first),
+    'alpha-desc': (a,b)=>b.last.localeCompare(a.last)||b.first.localeCompare(a.first),
+  };
+  available.sort(sorts[currentSort]||sorts['score-desc']);
+
+  document.getElementById('stat-total').textContent     = players.length;
+  document.getElementById('stat-available').textContent = players.length - taken.size;
+  document.getElementById('stat-taken').textContent     = taken.size;
+
+  const allSorted = [...available, ...takenList];
+  if(allSorted.length===0){ document.getElementById('grid').innerHTML='<div class="empty-state">No players match your search</div>'; return; }
+
+  let html='', dividerShown=false;
+  allSorted.forEach(p=>{
+    const key  = playerKey(p);
+    const safe = key.replace(/[^a-z0-9]/gi,'_');
+    const isTaken = taken.has(key);
+    const name = p.first ? `${p.first} ${p.last}` : p.last;
+
+    if(isTaken && !dividerShown){ dividerShown=true; html+=`<div class="taken-section-label">✕ Taken / Off Board</div>`; }
+
+    html+=`
+    <div class="card ${isTaken?'taken':''}" id="card-${safe}">
+      <div class="card-header">
+        <div class="jersey">#${p.num}</div>
+        <div class="name-area">
+          <div class="player-name">${name}</div>
+          <div class="taken-badge">DRAFTED</div>
+        </div>
+      </div>
+      <div class="scores-area">
+        <div class="score-cell"><div class="score-label">Batting</div>${fmt(p.bat)}<div class="score-bar"><div class="score-bar-fill" style="width:${barW(p.bat)}%"></div></div></div>
+        <div class="score-cell"><div class="score-label">Fielding</div>${fmt(p.fld)}<div class="score-bar"><div class="score-bar-fill" style="width:${barW(p.fld)}%"></div></div></div>
+        <div class="score-cell"><div class="score-label">Total</div>${fmtTotal(p.total,isTaken)}</div>
+      </div>
+      <div class="notes-area">
+        <div class="notes-text" id="notes-${safe}">${p.notes||'No notes.'}</div>
+        <button class="notes-toggle" id="toggle-${safe}" onclick="toggleNotes('${safe}')">Show more</button>
+      </div>
+      <div class="card-footer">
+        ${isTaken
+          ? `<button class="draft-btn undo" onclick="undraftPlayer('${key}')">↩ Restore</button>`
+          : `<button class="draft-btn" onclick="draftPlayer('${key}')">✕ Mark Taken</button>`}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('grid').innerHTML = html;
+
+  allSorted.forEach(p=>{
+    const safe = playerKey(p).replace(/[^a-z0-9]/gi,'_');
+    const el  = document.getElementById(`notes-${safe}`);
+    const btn = document.getElementById(`toggle-${safe}`);
+    if(el&&btn&&el.scrollHeight>el.clientHeight+2) btn.style.display='block';
+  });
+}
+
+function toggleNotes(safe){
+  const el=document.getElementById(`notes-${safe}`), btn=document.getElementById(`toggle-${safe}`);
+  if(!el||!btn) return;
+  btn.textContent = el.classList.toggle('expanded') ? 'Show less' : 'Show more';
+}
+
+async function draftPlayer(key){ taken.add(key); render(); await saveToSheets(); }
+async function undraftPlayer(key){ taken.delete(key); render(); await saveToSheets(); }
+
+// ── BOOT ──────────────────────────────────────────────────
+showLoading(false);
+const savedUrl = getScriptUrl();
+if(savedUrl) document.getElementById('scriptUrlInput').value = savedUrl;
+reloadAll();
+</script>
+</body>
+</html>
