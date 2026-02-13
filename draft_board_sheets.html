@@ -28,29 +28,18 @@
   .stat-chip.taken span{color:var(--red);}
 
   /* SYNC */
-  .sync-status{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.05em;}
+  .sync-status{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.05em;}
+  .sync-indicator{display:flex;align-items:center;gap:7px;}
   .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--text-dim);flex-shrink:0;transition:background .3s;}
   .sync-dot.synced{background:var(--green);}
   .sync-dot.syncing{background:var(--gold);animation:pulse .8s infinite;}
   .sync-dot.error{background:var(--red);}
+  .sync-time{font-size:9px;color:var(--text-dim);text-transform:uppercase;}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
   /* RELOAD BTN */
   .reload-btn{background:none;border:1px solid var(--border);color:var(--text-muted);font-family:var(--head);font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:4px;cursor:pointer;transition:all .15s;}
   .reload-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
-
-  /* SETUP BANNER */
-  .setup-banner{background:#1a1200;border:1px solid var(--gold-dim);border-left:4px solid var(--gold);margin:16px 28px;padding:14px 18px;border-radius:4px;display:none;}
-  .setup-banner.visible{display:block;}
-  .setup-banner h3{font-family:var(--head);font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
-  .setup-banner p{font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:6px;}
-  .setup-banner code{background:var(--bg);border:1px solid var(--border);padding:2px 6px;border-radius:3px;font-family:var(--mono);font-size:12px;color:var(--gold);}
-  .url-input-row{display:flex;gap:8px;margin-top:10px;}
-  .url-input-row input{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 12px;border-radius:4px;outline:none;}
-  .url-input-row input:focus{border-color:var(--gold-dim);}
-  .url-input-row input::placeholder{color:var(--text-dim);}
-  .url-save-btn{background:var(--gold);border:none;color:#000;font-family:var(--head);font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 16px;border-radius:4px;cursor:pointer;white-space:nowrap;}
-  .url-save-btn:hover{background:#d49200;}
 
   /* CONTROLS */
   .controls{padding:14px 28px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
@@ -135,7 +124,6 @@
     .grid{padding:12px 16px;gap:10px;}
     .controls{padding:10px 16px;}
     h1{font-size:22px;}
-    .setup-banner{margin:12px 16px;}
   }
 </style>
 </head>
@@ -153,8 +141,11 @@
   </div>
   <div class="header-right">
     <div class="sync-status">
-      <div class="sync-dot" id="syncDot"></div>
-      <span id="syncLabel">Connecting…</span>
+      <div class="sync-indicator">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncLabel">Connecting…</span>
+      </div>
+      <span class="sync-time" id="syncTime"></span>
     </div>
     <button class="reload-btn" onclick="reloadAll()" title="Refresh from sheet">↻ Refresh</button>
     <div class="header-stats">
@@ -164,15 +155,6 @@
     </div>
   </div>
 </header>
-
-<div class="setup-banner" id="setupBanner">
-  <h3>⚙ One-time Setup Required</h3>
-  <p>Paste your Google Apps Script Web App URL below. See <code>SETUP_INSTRUCTIONS.txt</code> for how to deploy it.</p>
-  <div class="url-input-row">
-    <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/YOUR_ID/exec" />
-    <button class="url-save-btn" onclick="saveScriptUrl()">Save &amp; Connect</button>
-  </div>
-</div>
 
 <div class="controls">
   <span class="controls-label">Sort</span>
@@ -190,29 +172,19 @@
 <div class="grid" id="grid"></div>
 
 <script>
-const STORAGE_URL_KEY = 'draft_script_url';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwEbbWC6No8mVLb26nVh9JWlw1NspqigjgIiC3UU_LDt62-NYk_0h6jcMSzKmYPHWqAuQ/exec';
 let players = [];
 let taken   = new Set();
 let currentSort = 'score-desc';
-
-// ── URL MANAGEMENT ────────────────────────────────────────
-function getScriptUrl(){ return localStorage.getItem(STORAGE_URL_KEY)||''; }
-
-function saveScriptUrl(){
-  const val = document.getElementById('scriptUrlInput').value.trim();
-  if(!val.startsWith('https://script.google.com')){
-    alert('Please paste a valid Apps Script URL starting with https://script.google.com');
-    return;
-  }
-  localStorage.setItem(STORAGE_URL_KEY, val);
-  document.getElementById('setupBanner').classList.remove('visible');
-  reloadAll();
-}
 
 // ── SYNC ──────────────────────────────────────────────────
 function setSyncStatus(state, label){
   document.getElementById('syncDot').className = 'sync-dot '+state;
   document.getElementById('syncLabel').textContent = label;
+  if(state === 'synced') {
+    const now = new Date();
+    document.getElementById('syncTime').textContent = 'Last: ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+  }
 }
 
 function showLoading(show, msg){
@@ -221,12 +193,10 @@ function showLoading(show, msg){
 }
 
 async function reloadAll(){
-  const url = getScriptUrl();
-  if(!url){ document.getElementById('setupBanner').classList.add('visible'); setSyncStatus('error','Not connected'); render(); return; }
   showLoading(true,'Loading from Google Sheets…');
   setSyncStatus('syncing','Loading…');
   try {
-    const res  = await fetch(url+'?t='+Date.now()); // cache-bust
+    const res  = await fetch(SCRIPT_URL+'?t='+Date.now()); // cache-bust
     const data = await res.json();
     if(!data.success) throw new Error(data.error||'Unknown error');
     players = data.players || [];
@@ -236,11 +206,10 @@ async function reloadAll(){
   } catch(e){
     setSyncStatus('error','Load failed');
     console.error(e);
-    // fallback to cached taken state if players already loaded
     const fb = localStorage.getItem('taken_fallback');
     if(fb) taken = new Set(JSON.parse(fb));
     if(players.length === 0){
-      document.getElementById('grid').innerHTML = `<div class="error-state">⚠ Could not load player data from Google Sheets.<br>Check your script URL or try refreshing.</div>`;
+      document.getElementById('grid').innerHTML = `<div class="error-state">⚠ Could not load player data from Google Sheets.<br>Check your connection or script permissions.</div>`;
       showLoading(false);
       return;
     }
@@ -250,12 +219,10 @@ async function reloadAll(){
 }
 
 async function saveToSheets(){
-  const url = getScriptUrl();
-  if(!url) return;
   setSyncStatus('syncing','Saving…');
   localStorage.setItem('taken_fallback', JSON.stringify([...taken]));
   try {
-    const res  = await fetch(url, { method:'POST', body: JSON.stringify({ taken:[...taken] }) });
+    const res  = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ taken:[...taken] }) });
     const data = await res.json();
     if(!data.success) throw new Error(data.error);
     setSyncStatus('synced','Synced');
@@ -298,7 +265,7 @@ function barW(v){ return v===null ? 0 : Math.min(100,(v/10)*100); }
 
 // ── RENDER ────────────────────────────────────────────────
 function render(){
-  if(players.length === 0 && getScriptUrl()){
+  if(players.length === 0){
     document.getElementById('grid').innerHTML = '<div class="empty-state">No player data loaded</div>';
     return;
   }
@@ -380,8 +347,6 @@ async function undraftPlayer(key){ taken.delete(key); render(); await saveToShee
 
 // ── BOOT ──────────────────────────────────────────────────
 showLoading(false);
-const savedUrl = getScriptUrl();
-if(savedUrl) document.getElementById('scriptUrlInput').value = savedUrl;
 reloadAll();
 </script>
 </body>
